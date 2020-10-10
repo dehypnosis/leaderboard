@@ -36,7 +36,3 @@ Your are required to submit a zip file containing
  - Source code
  - README file
 - Design documentation describing any assumptions and design considerations
-
-
-
-
