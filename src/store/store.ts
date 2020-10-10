@@ -1,19 +1,25 @@
 import { EventEmitter } from "events";
 import { Player } from "./player";
-import { ValidationError } from "./error";
+import { ValidationError } from "../error";
+
 
 export enum PlayerStoreEventType {
-    "ADD" ="add",
-    "UPDATE" = "update",
-    "DELETE" = "delete",
+    // TODO: add init, i think it is a problem related to sorting.... or binary search
+    ADD ="add",
+    UPDATE = "update",
+    DELETE = "delete",
+    LOAD = "load",
 }
 
 export type PlayerStoreEvent = {
     type: PlayerStoreEventType.DELETE;
-    player: Pick<Player, "id">;
+    payload: Pick<Player, "id">;
 } | {
     type: PlayerStoreEventType.ADD | PlayerStoreEventType.UPDATE;
-    player: Player;
+    payload: Player;
+} | {
+    type: PlayerStoreEventType.LOAD;
+    payload: Player[];
 };
 
 export type PlayerStoreConsumer = (event: PlayerStoreEvent) => void;
@@ -39,12 +45,10 @@ export abstract class PlayerStore {
         // initialized with current data
         return this.read()
             .then((players) => {
-                for (const player of players) {
-                    consumer({
-                        type: PlayerStoreEventType.ADD,
-                        player,
-                    });
-                }
+                consumer({
+                    type: PlayerStoreEventType.LOAD,
+                    payload: players,
+                });
             });
     }
 
@@ -59,16 +63,13 @@ export abstract class PlayerStore {
     }
 
     /* public methods */
-    public async createAndBroadcast(payload: Omit<Player, "id">): Promise<Player> {
-        this.validatePayload({
-            ...payload,
-            id: 1,
-        });
+    public async createAndBroadcast(payload: Player): Promise<Player> {
+        this.validatePayload(payload);
 
         const player = await this.create(payload);
         this.broadcast({
             type: PlayerStoreEventType.ADD,
-            player,
+            payload: player,
         });
         return player;
     }
@@ -79,7 +80,7 @@ export abstract class PlayerStore {
         const player = await this.update(payload);
         this.broadcast({
             type: PlayerStoreEventType.UPDATE,
-            player,
+            payload: player,
         });
         return player;
     }
@@ -93,7 +94,7 @@ export abstract class PlayerStore {
         const player = await this.delete(payload);
         this.broadcast({
             type: PlayerStoreEventType.DELETE,
-            player,
+            payload: player,
         });
         return player;
     }
@@ -109,7 +110,7 @@ export abstract class PlayerStore {
 
 
     /* delegated methods */
-    protected abstract create(payload: Omit<Player, "id">): Promise<Player>;
+    protected abstract create(payload: Player): Promise<Player>;
 
     protected abstract update(payload: Player): Promise<Player>;
 

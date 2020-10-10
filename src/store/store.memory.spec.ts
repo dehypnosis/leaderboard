@@ -1,8 +1,9 @@
 import { PlayerMemoryStore } from "./store.memory";
-import {PlayerStoreConsumer, PlayerStoreEventType} from "./store";
-import {BadRequestError, ValidationError} from "./error";
+import { PlayerStoreConsumer, PlayerStoreEventType } from "./store";
+import { BadRequestError, ValidationError } from "../error";
 
-/* initialized store */
+
+/* initialize store */
 let store: PlayerMemoryStore;
 
 beforeAll(async () => {
@@ -15,6 +16,7 @@ afterAll(async () => {
         await store.stopped();
     }
 });
+
 
 /* unit tests here */
 const DATA_N = 25000;
@@ -29,14 +31,16 @@ describe("memory store", () => {
 
         await store.registerConsumer(mock);
         await store.unregisterConsumer(mock);
-        expect(mock).toBeCalledTimes(DATA_N);
-        expect(mock).toHaveBeenCalledWith(
+        expect(mock).toBeCalledTimes(1);
+        expect(mock).toBeCalledWith(
             expect.objectContaining({
-                type: PlayerStoreEventType.ADD,
-                player: expect.objectContaining({
-                    id: expect.any(Number),
-                    mmr: expect.any(Number),
-                }),
+                type: PlayerStoreEventType.LOAD,
+                payload: expect.arrayContaining([
+                    expect.objectContaining({
+                        id: expect.any(Number),
+                        mmr: expect.any(Number),
+                    }),
+                ]),
             }),
         );
     });
@@ -44,6 +48,7 @@ describe("memory store", () => {
     it("should throw an error for invalid mmr in create payload: validatePayload(), createAndBroadcast()", async () => {
         await expect(
             store.createAndBroadcast({
+                id: 100,
                 // @ts-ignore
                 mmr: "100.5",
             })
@@ -89,11 +94,12 @@ describe("memory store", () => {
             .rejects.toThrow(new BadRequestError("cannot find the player with given id."));
     });
 
-    it("should return created payload well: createAndBroadcast(), registerConsumer(), unregisterConsumer()", async () => {
+    it("should return created payload well and should throw for duplicate id: createAndBroadcast(), registerConsumer(), unregisterConsumer()", async () => {
         const mock: PlayerStoreConsumer = jest.fn();
 
         await store.registerConsumer(mock);
         const payload = {
+            id: 919191919,
             mmr: 10101010,
         };
 
@@ -102,16 +108,15 @@ describe("memory store", () => {
         await expect(player).toStrictEqual(expect.objectContaining(payload));
         await expect(store.count()).resolves.toBeGreaterThan(DATA_N);
 
-        // unregister consumer and create extra one
+        // unregister consumer and create duplicate one
         await store.unregisterConsumer(mock);
-        const player2 = await store.createAndBroadcast(payload);
-        await expect(player2).toStrictEqual(expect.objectContaining(payload));
+        await expect(store.createAndBroadcast(payload)).rejects.toThrowError(new BadRequestError("given player id already exists."));
 
         // mock should be called
         await new Promise(resolve => setTimeout(resolve, 1000));
         expect(mock).toHaveBeenLastCalledWith({
             type: PlayerStoreEventType.ADD,
-            player,
+            payload: player,
         });
     });
 
@@ -120,6 +125,7 @@ describe("memory store", () => {
 
         await store.registerConsumer(mock);
         const payload = {
+            id: 9988989,
             mmr: 10101010,
         };
 
@@ -136,7 +142,7 @@ describe("memory store", () => {
         await new Promise(resolve => setTimeout(resolve, 1000));
         expect(mock).toHaveBeenLastCalledWith({
             type: PlayerStoreEventType.UPDATE,
-            player: payload2,
+            payload: payload2,
         });
 
         // delete user

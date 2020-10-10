@@ -88,7 +88,6 @@ A Swagger UI endpoint has been set to homepage for a detailed documentation and 
 ### 2.1. Assumptions
 - A player's id cannot be duplicate.
 - A player's id cannot be updated once created in persistent layer.
-- New player's id will be automatically assigned.
 - Player's id and MMR should be a positive integer.
 - A player with higher MMR takes higher (numerically lower) rank.
 - For the tied MMR, younger player (whose id is numerically higher) will occupy higher rank.
@@ -135,14 +134,12 @@ I have heard once that Riot Games has been using Kafka as a central messaging br
 the exact role of that. But here I assumed that there might be a lot of `PlayerLeaderBoard like` apps.
 So I tried to make `PlayerStore` as a kind of message broker, and `PlayerLeaderBoard` as message consumer.
 
-Thus `PlayerLeaderBoard` receives Add, Update, Delete messages from the store to compose a linked list of players
-on the standard of rank for sequential access. At the same time, an extra hashmap composes to directly point
-to each users by id for random access to any specific users.
+// TODO: skipped list? balanced binary tree?
+Thus `PlayerLeaderBoard` receives Add, Update, Delete messages from the store to compose a balanced binary tree
+structure which is ready for low time complexity for major operations. At the same time, an extra hashmap composes
+to directly point to each users by id for fast random access to any specific users.
 
 ##### HTTP Server
 
 And finally, a `HTTP Server` properly serve the features of `PlayerLeaderBoard` and `PlayerStore` as a single public interface.
 
----
-
-* Please let me informed of if it is a trouble that I made it as a public repository.
