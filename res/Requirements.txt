@@ -1,0 +1,42 @@
+Design simple leaderboard backend application for league of legends.
+
+- Initial data contains 25,000 rows of data and each row consists of playerId and mmr (match making rating)
+- Initial data should be loaded on server bootstrap
+- Leaderboard application should provide following APIs to manipulate leadeader board.
+
+
+API Specification
+
+Your application should provide following REST API
+
+1. API to return total number of player count
+2. API to return tier of a player
+3. API to return list of top 10 players
+4. API to return list of players near given player's id.  eg) If playerId is 5 and range of 5 is given.  You are required to find 5 higher rank players and 5 lower rank players
+5. API to update/add a player (Leaderboard should also be updated)
+6. API to delete a player
+
+Player model consists of
+- long playerId
+- int mmr
+- int rank
+- Tier tier
+
+Tier model consists of 
+- CHALLENGER // top 100 players
+- MASTER, // top 1% players
+- DIAMOND, // top 5% players
+- PLATINUM, // top 10% players
+- GOLD, // top 25% players
+- SILVER, // top 65% players
+- BROZNE, // others
+
+Your are required to submit a zip file containing
+- testable application with an instruction to build/test/run application
+ - Source code
+ - README file
+- Design documentation describing any assumptions and design considerations
+
+
+
+
