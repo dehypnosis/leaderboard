@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
-    "test": "jest --config ./jest.config.js --coverage",
+    "test": "jest --config ./jest.config.js --verbose --coverage",
     "build": "tsc --build tsconfig.json",
     "start": "node ."
   },

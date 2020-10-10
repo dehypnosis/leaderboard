@@ -7,7 +7,7 @@ ENV NODE_ENV production
 COPY ./package.json ./yarn.lock ./
 RUN NODE_ENV=development yarn
 
-# copy src and build
+# copy source and resource then build
 COPY ./ ./
 RUN yarn build
 

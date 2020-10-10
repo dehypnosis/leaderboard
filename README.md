@@ -1,7 +1,6 @@
-1. user, userStore -> leaderboard (userStoreSubscriber) interface and implementation
+1. leader board
 2. make a server
 3. create public API with Swagger doc
-4. create swagger endpoint
 5. draw and embed a diagram for design overview 
 
 ---
@@ -27,8 +26,8 @@ Interviewee: Dong Wook Kim
 - Build tool: Typescript v4.0.3
 - Test tool: Jest v26.5.2 (ts-jest v26.4.1)
 
-The application can be run on any local environment which is compatible to above.
-But for your convenience, Build, Test and Run commands have been fully dockerized.
+The application can be run on any local environment which is compatible to the above.
+But for the convenience, it is fully dockerized.
 
 - Docker v19.03.13
 
@@ -37,28 +36,18 @@ But for your convenience, Build, Test and Run commands have been fully dockerize
 ### 1.2. Instructions without Docker
 Configure environment and install dependencies with `yarn install`. 
 
-#### Test
-- `yarn test`: Run unit tests on typescript codes and show the test coverage.
-
-#### Build
-- `yarn build`: Transpile typescript codes to runnable JS.
-
-#### Run
-- `yarn start`: Run the built runnable. A HTTP server for the API will be started to listen to
-                port *8888* by default. Can set the `PORT` env variable to change the listening port.
+- Test:  `yarn test` runs unit tests on typescript codes and show the test coverage.
+- Build: `yarn build` transpiles typescript codes to runnable JS.
+- Run:   `yarn start` runs the built runnable. A HTTP server for the API listens to
+          the port *8888* by default. Can set the `PORT` env variable to change the listening port.
 
 
 
 ### 1.3. Instructions with Docker
 
-#### Build image
-- `docker build . -t riot-assignment`
-
-#### Test
-- `docker run riot-assignment test`
-
-#### Run
-- `docker run -p8888:8888 riot-assignment`
+- Build image: `docker build . -t riot-assignment`
+- Test:        `docker run riot-assignment test`
+- Run:         `docker run -p8888:8888 riot-assignment`
 
 
 
@@ -85,11 +74,11 @@ Configure environment and install dependencies with `yarn install`.
 - `GET /players?strategy=close_to_player&player_id=:id&range=5`
 
 
-### 1.5. Documentation
+### 1.5. API Document
 
-A Swagger UI endpoint has been set for detailed documentation and testability.
+A Swagger UI endpoint has been set to homepage for a detailed documentation and a playground.
 
-- [https://localhost:8888/~doc](https://localhost:8888/~doc)
+- Visit [https://localhost:8888](https://localhost:8888)
 
 ---
 
@@ -97,10 +86,14 @@ A Swagger UI endpoint has been set for detailed documentation and testability.
 ## 2. Design considerations
 
 ### 2.1. Assumptions
-- A user with higher MMR takes higher (numerically lower) rank.
-- For the tied MMR, younger user (whose id is numerically higher) will occupy higher rank.
+- A player's id cannot be duplicate.
+- A player's id cannot be updated once created in persistent layer.
+- New player's id will be automatically assigned.
+- Player's id and MMR should be a positive integer.
+- A player with higher MMR takes higher (numerically lower) rank.
+- For the tied MMR, younger player (whose id is numerically higher) will occupy higher rank.
 
-### 2.2. Implementation overview
+### 2.2. Overview
 
 Obviously, the requirement seems like making just a simple application which mimics the leaderboard of LoL.
 But I know your assignment requires me to show my ability for designing not only for coding.
@@ -109,31 +102,47 @@ So I have elaborated this application somewhat to contain the fundamental of tes
 extensibility and scalability.
 
 
-1. For the testability:
+#### 2.2.1. Testability:
 
-Jest and Swagger has been set for unit test, manual test and documentation.
+Jest and Swagger has been set for unit test, a playground and documentation.
 
 
-2. For the portability and scalability:
+#### 2.2.2. Portability:
  
 The app has been dockerized.
 
 
-3. For the extensibility and scalability:
+#### 2.2.3. Extensibility and scalability:
 
-Firstly, I decoupled the conceipt of `UserStore` and the `LeaderBoard`. There might be a ton of utilizations
+
+##### PlayerStore => PlayerMemoryStore
+
+Firstly, I decoupled the conceipt of `PlayerStore` and the `PlayerLeaderBoard`. There might be a ton of utilizations
 for user identities and game results in Riot Games. Then naturally there might be a single source of user data
-like a distributed database which I named `UserStore` here in this project.
+like a distributed database which I named `PlayerStore` here in this project.
 
-So, `UserStore` became an abstraction layer for a stateless application which can deal with a remote data
+So, `PlayerStore` became an abstraction layer for a stateless application which can deal with a remote data
 source and may don't have a persistent layer inside itself for scalability. But here for the demonstration,
-`UserMemoryStore` has been implemented which implements `UserStore`... to not to go too far :)
+`PlayerMemoryStore` has been implemented which roughly implements `PlayerStore`... to not to go too far :)
 
-Secondly, I made `LeaderBoard` application as an instance of `UserStoreConsumer`. I imagined
+##### PlayerStoreConsumer => PlayerLeaderBoard
+
+Secondly, I made `PlayerLeaderBoard` application as an implementation of `PlayerStoreConsumer`. I imagined
 not just few threads in a single process of a node rather some independent services in a huge distributed
 system; I meant yours.
 
 I have heard once that Riot Games has been using Kafka as a central messaging broker. I'm not sure about
-the exact role of that. But here I assumed that there might be a lot of `LeaderBoard like` apps.
-So I tried to make `UserStore` as a kind of `MessageBroker`, and `LeaderBoard` as `MessageConsumer`.
- 
+the exact role of that. But here I assumed that there might be a lot of `PlayerLeaderBoard like` apps.
+So I tried to make `PlayerStore` as a kind of message broker, and `PlayerLeaderBoard` as message consumer.
+
+Thus `PlayerLeaderBoard` receives Add, Update, Delete messages from the store to compose a linked list of players
+on the standard of rank for sequential access. At the same time, an extra hashmap composes to directly point
+to each users by id for random access to any specific users.
+
+##### HTTP Server
+
+And finally, a `HTTP Server` properly serve the features of `PlayerLeaderBoard` and `PlayerStore` as a single public interface.
+
+---
+
+* Please let me informed of if it is a trouble that I made it as a public repository.
