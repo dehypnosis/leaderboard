@@ -4,11 +4,10 @@ import { ValidationError } from "../error";
 
 
 export enum PlayerStoreEventType {
-    // TODO: add init, i think it is a problem related to sorting.... or binary search
+    INIT = "init",
     ADD ="add",
     UPDATE = "update",
     DELETE = "delete",
-    LOAD = "load",
 }
 
 export type PlayerStoreEvent = {
@@ -18,7 +17,7 @@ export type PlayerStoreEvent = {
     type: PlayerStoreEventType.ADD | PlayerStoreEventType.UPDATE;
     payload: Player;
 } | {
-    type: PlayerStoreEventType.LOAD;
+    type: PlayerStoreEventType.INIT;
     payload: Player[];
 };
 
@@ -46,7 +45,7 @@ export abstract class PlayerStore {
         return this.read()
             .then((players) => {
                 consumer({
-                    type: PlayerStoreEventType.LOAD,
+                    type: PlayerStoreEventType.INIT,
                     payload: players,
                 });
             });

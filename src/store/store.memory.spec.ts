@@ -34,7 +34,7 @@ describe("memory store", () => {
         expect(mock).toBeCalledTimes(1);
         expect(mock).toBeCalledWith(
             expect.objectContaining({
-                type: PlayerStoreEventType.LOAD,
+                type: PlayerStoreEventType.INIT,
                 payload: expect.arrayContaining([
                     expect.objectContaining({
                         id: expect.any(Number),

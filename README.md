@@ -1,4 +1,4 @@
-1. leader board
+1. leader board with RB-tree
 2. make a server
 3. create public API with Swagger doc
 5. draw and embed a diagram for design overview 
@@ -71,7 +71,7 @@ Configure environment and install dependencies with `yarn install`.
 
 6. API to return list of players near given player's id. eg) If playerId is 5 and range of 5 is given.
    You are required to find 5 higher rank players and 5 lower rank players
-- `GET /players?strategy=close_to_player&player_id=:id&range=5`
+- `GET /players?strategy=around_play&player_id=:id&range=5`
 
 
 ### 1.5. API Document
@@ -91,6 +91,7 @@ A Swagger UI endpoint has been set to homepage for a detailed documentation and 
 - Player's id and MMR should be a positive integer.
 - A player with higher MMR takes higher (numerically lower) rank.
 - For the tied MMR, younger player (whose id is numerically higher) will occupy higher rank.
+
 
 ### 2.2. Overview
 
@@ -116,13 +117,14 @@ The app has been dockerized.
 
 ##### PlayerStore => PlayerMemoryStore
 
-Firstly, I decoupled the conceipt of `PlayerStore` and the `PlayerLeaderBoard`. There might be a ton of utilizations
+Firstly, I decoupled the conceipt of `PlayerStore` and the `PlayerLeaderBoard`. There might be a lot of utilization
 for user identities and game results in Riot Games. Then naturally there might be a single source of user data
 like a distributed database which I named `PlayerStore` here in this project.
 
 So, `PlayerStore` became an abstraction layer for a stateless application which can deal with a remote data
-source and may don't have a persistent layer inside itself for scalability. But here for the demonstration,
+source and may don't have a persistent layer inside itself for scalability. Here for the demonstration,
 `PlayerMemoryStore` has been implemented which roughly implements `PlayerStore`... to not to go too far :)
+
 
 ##### PlayerStoreConsumer => PlayerLeaderBoard
 
@@ -130,16 +132,35 @@ Secondly, I made `PlayerLeaderBoard` application as an implementation of `Player
 not just few threads in a single process of a node rather some independent services in a huge distributed
 system; I meant yours.
 
-I have heard once that Riot Games has been using Kafka as a central messaging broker. I'm not sure about
-the exact role of that. But here I assumed that there might be a lot of `PlayerLeaderBoard like` apps.
-So I tried to make `PlayerStore` as a kind of message broker, and `PlayerLeaderBoard` as message consumer.
+I have seen once that Riot Games has been using Kafka as a central messaging broker. I'm not sure about
+the exact role of that in the whole system. But here I assumed that there might be a lot of `PlayerLeaderBoard`
+like apps. So I tried to treat `PlayerStore` as a kind of message broker, and `PlayerLeaderBoard` as a message consumer.
 
-// TODO: skipped list? balanced binary tree?
-Thus `PlayerLeaderBoard` receives Add, Update, Delete messages from the store to compose a balanced binary tree
-structure which is ready for low time complexity for major operations. At the same time, an extra hashmap composes
-to directly point to each users by id for fast random access to any specific users.
+Finally, a `HTTP Server` would serve the features of `PlayerLeaderBoard` and `PlayerStore` as a single public
+interface.
 
-##### HTTP Server
 
-And finally, a `HTTP Server` properly serve the features of `PlayerLeaderBoard` and `PlayerStore` as a single public interface.
+### 2.3. Data structure for rank calculation
 
+At first, I thought this assignment has been designed for just testing an ability to implement a simple application
+from a scratch. So my first idea was simply using a sorted Array with a binary search strategy for calculating
+ranks, and an extra hash map for random access to specific user node.
+
+After I had made some progress in broad perspective code structure, I realized that Riots Games would have dozens
+of millions users. Then I found out that it requires consideration for a highly performant implementation of the
+leaderboard.
+
+Naive Array takes O(N) for insertion, deletion, searching (for rank calculation) operations. So I decided to use
+Binary Search Tree based data structure which takes logarithmic time complexity for such operations.
+
+Before making a decision, I simply checked whether a single node can easily load all the user data in memory.
+I found that more than 30 million users play LoL nowadays. So memory space for 30M users data with
+`{ id, mmr, left, right, size }` like nodes (`size` field is for memorized number of children nodes for calculating rank)
+would take approximately (4byte + 4byte + 8byte + 8byte + 4byte) * 30M which reaches to just 840MB.
+
+So in-memory strategy seems obviously acceptable for this scenario. Then back to the data structure decision,
+I chose Red Black Tree which is a kind of BST with self-balancing feature. Because there must be tons of updates
+in user entities even in a single day, I thought a tree without self-balancing would be easily biased to make bad
+performance.
+
+For the codes, I just used an open source RB-Tree library rather than struggling with reinventing that one.
