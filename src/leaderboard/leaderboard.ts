@@ -1,6 +1,4 @@
 import { Player, PlayerStoreConsumer, PlayerStoreEvent, PlayerStoreEventType } from "../store";
-// @ts-ignore
-import { createRBTree } from "functional-red-black-tree";
 
 export enum PlayerTier {
     "Top100" = "CHALLENGER", // top 100 players
