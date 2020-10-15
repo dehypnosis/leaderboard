@@ -38,8 +38,8 @@ Configure environment and install dependencies with `yarn install`.
 ### 1.3. Instructions with Docker
 
 - Build image: `docker build . -t riot-assignment`
-- Test:        `docker run riot-assignment test`
-- Run:         `docker run -p8080:8080 riot-assignment`
+- Test:        `docker run -it riot-assignment test`
+- Run:         `docker run -it -p8080:8080 riot-assignment`
 
 
 
@@ -88,6 +88,38 @@ extensibility and scalability.
 #### 2.2.1. Testability:
 
 Jest and Swagger has been set for unit test, a playground and documentation.
+
+Below is the latest test result with coverage:
+```
+----------------------|---------|----------|---------|---------|----------------------------------
+File                  | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                
+----------------------|---------|----------|---------|---------|----------------------------------
+All files             |   95.64 |    81.82 |     100 |   95.57 |                                  
+ src                  |   91.55 |       50 |     100 |   91.89 |                                  
+  error.ts            |   91.55 |       50 |     100 |   91.89 | 31,35,39                         
+ src/api              |   95.05 |    57.14 |     100 |   94.25 |                                  
+  server.ts           |   95.05 |    57.14 |     100 |   94.25 | 127,137,154,161,173              
+ src/leaderboard      |   97.12 |    93.22 |     100 |   96.84 |                                  
+  index.ts            |     100 |      100 |     100 |     100 |                                  
+  leaderboard.ts      |   97.09 |    93.22 |     100 |   96.81 | 77,89,92                         
+ src/leaderboard/list |   94.58 |    83.58 |     100 |   94.32 |                                  
+  array.ts            |   97.22 |      100 |     100 |   96.88 | 33                               
+  bst.ts              |   91.67 |     85.9 |     100 |   91.54 | 53-54,77-80,86,88,95,105,130,174 
+  common.ts           |     100 |       75 |     100 |     100 | 39-58                            
+  index.ts            |     100 |      100 |     100 |     100 |                                  
+  list.ts             |   92.31 |     87.5 |     100 |   91.67 | 13                               
+ src/store            |     100 |      100 |     100 |     100 |                                  
+  index.ts            |     100 |      100 |     100 |     100 |                                  
+  store.memory.ts     |     100 |      100 |     100 |     100 |                                  
+  store.ts            |     100 |      100 |     100 |     100 |                                  
+----------------------|---------|----------|---------|---------|----------------------------------
+Test Suites: 5 passed, 5 total
+Tests:       29 passed, 29 total
+Snapshots:   0 total
+Time:        87.591 s
+Ran all test suites.
+Done in 88.06s.
+``` 
 
 
 #### 2.2.2. Portability:
