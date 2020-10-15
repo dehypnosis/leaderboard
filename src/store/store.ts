@@ -1,6 +1,11 @@
 import { EventEmitter } from "events";
 import { Player } from "./player";
-import { ValidationError } from "../error";
+import {
+    AlreadyExistingPlayerError,
+    NotFoundPlayerError,
+    PlayerIdValidationError,
+    PlayerMMRValidationError,
+} from "../error";
 
 
 export enum PlayerStoreEventType {
@@ -21,30 +26,32 @@ export type PlayerStoreEvent = {
     payload: Player[];
 };
 
-export type PlayerStoreConsumer = (event: PlayerStoreEvent) => void;
+export interface PlayerStoreConsumer {
+    onPlayerStoreEvent(event: PlayerStoreEvent): void;
+}
 
 export abstract class PlayerStore {
     private static readonly EventName = "PLAYER";
     private readonly emitter = new EventEmitter();
 
     /* lifecycle */
-    public async started(): Promise<void> {
+    public async start(): Promise<void> {
         console.log("PlayerStore has been started");
     }
 
-    public async stopped(): Promise<void> {
+    public async stop(): Promise<void> {
         this.emitter.removeAllListeners(PlayerStore.EventName);
         console.log("PlayerStore has been stopped");
     }
 
     /* pub/sub interface */
     public registerConsumer(consumer: PlayerStoreConsumer): Promise<void> {
-        this.emitter.addListener(PlayerStore.EventName, consumer);
+        this.emitter.addListener(PlayerStore.EventName, consumer.onPlayerStoreEvent);
 
         // initialized with current data
         return this.read()
             .then((players) => {
-                consumer({
+                consumer.onPlayerStoreEvent({
                     type: PlayerStoreEventType.INIT,
                     payload: players,
                 });
@@ -52,7 +59,7 @@ export abstract class PlayerStore {
     }
 
     public unregisterConsumer(consumer: PlayerStoreConsumer): Promise<void> {
-        this.emitter.removeListener(PlayerStore.EventName, consumer);
+        this.emitter.removeListener(PlayerStore.EventName,  consumer.onPlayerStoreEvent);
         return Promise.resolve();
     }
 
@@ -63,7 +70,7 @@ export abstract class PlayerStore {
 
     /* public methods */
     public async createAndBroadcast(payload: Player): Promise<Player> {
-        this.validatePayload(payload);
+        await this.validatePayload(payload, false);
 
         const player = await this.create(payload);
         this.broadcast({
@@ -74,7 +81,7 @@ export abstract class PlayerStore {
     }
 
     public async updateAndBroadcast(payload: Player): Promise<Player> {
-        this.validatePayload(payload);
+        await this.validatePayload(payload, true);
 
         const player = await this.update(payload);
         this.broadcast({
@@ -85,10 +92,10 @@ export abstract class PlayerStore {
     }
 
     public async deleteAndBroadcast(payload: Pick<Player, "id">): Promise<Pick<Player, "id">> {
-        this.validatePayload({
+        await this.validatePayload({
             ...payload,
             mmr: 1,
-        });
+        }, true);
 
         const player = await this.delete(payload);
         this.broadcast({
@@ -98,12 +105,19 @@ export abstract class PlayerStore {
         return player;
     }
 
-    private validatePayload(payload: Player) {
-        if (isNaN(payload.id) || payload.id <= 0 || payload.id % 1 !== 0) {
-            throw new ValidationError("id should be an integer either equal or greater than zero.");
+    private async validatePayload(payload: Player, shouldExist: boolean): Promise<void> {
+        if (typeof payload.id !== "number" || isNaN(payload.id) || payload.id <= 0 || payload.id % 1 !== 0) {
+            throw new PlayerIdValidationError();
         }
-        if (isNaN(payload.mmr) || payload.mmr < 0 || payload.mmr % 1 !== 0) {
-            throw new ValidationError("mmr should be an integer greater than zero.");
+        if (typeof payload.mmr !== "number" || isNaN(payload.mmr) || payload.mmr < 0 || payload.mmr % 1 !== 0) {
+            throw new PlayerMMRValidationError();
+        }
+
+        const exists = await this.has(payload);
+        if (shouldExist && !exists) {
+            throw new NotFoundPlayerError();
+        } else if (!shouldExist && exists) {
+            throw new AlreadyExistingPlayerError();
         }
     }
 
@@ -117,5 +131,9 @@ export abstract class PlayerStore {
 
     protected abstract read(): Promise<Player[]>;
 
+    public abstract has(payload: Pick<Player, "id">): Promise<boolean>;
+
     public abstract count(): Promise<number>;
 }
+
+new PlayerMMRValidationError()

@@ -1,0 +1,200 @@
+openapi: 3.0.0
+info:
+  title: LoL leaderboard demonstration API
+  description: A submission for the assignment of Riot Games backend engineer interview from Dong Wook Kim.
+  version: 0.0.1
+components:
+  schemas:
+    PlayerCreatePayload:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        mmr:
+          type: integer
+          minimum: 0
+      required:
+        - id
+        - mmr
+    PlayerUpdatePayload:
+      type: object
+      properties:
+        mmr:
+          type: integer
+          minimum: 0
+      required:
+        - mmr
+    Player:
+      type: object
+      properties:
+        id:
+          type: integer
+          minmum: 1
+        mmr:
+          type: integer
+          minmum: 0
+        rank:
+          type: integer
+          minmum: 1
+        tier:
+          type: string
+          enum:
+            - CHALLENGER
+            - MASTER
+            - DIAMOND
+            - PLATINUM
+            - GOLD
+            - SILVER
+            - BROZNE
+      required:
+        - id
+        - mmr
+        - rank
+        - tier
+tags:
+  - name: player
+    description: Manipulate a single player entity
+  - name: players
+    description: Fetch players entities
+paths:
+  /players/{id}:
+    get:
+      summary: Retrieve a player
+      tags:
+        - player
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: A player's id
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A JSON of found user entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+    put:
+      summary: Update a player
+      tags:
+        - player
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: A player's id
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayerUpdatePayload"
+      responses:
+        '200':
+          description: A JSON of updated user entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+    delete:
+      summary: Delete a player
+      tags:
+        - player
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: A player's id
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A JSON of deleted user entity
+  /players:
+    post:
+      summary: Create a player
+      tags:
+        - player
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayerCreatePayload"
+      responses:
+        '200':
+          description: A JSON of created user entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+    get:
+      summary: Get players
+      tags:
+        - players
+      parameters:
+        - name: strategy
+          in: query
+          description: A name of way to fetch players
+          schema:
+            type: string
+            default: rank
+            enum:
+              - rank
+              - around_player
+        - name: offset
+          in: query
+          description: (rank) start offset to fetch
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          description: (rank) a number of users to fetch
+          schema:
+            type: integer
+            default: 10
+            minimum: 0
+            maximum: 100
+        - name: range
+          in: query
+          description: (around_player) a number of users to fetch from both up and down side each
+          schema:
+            type: integer
+            default: 5
+            minimum: 0
+            maximum: 50
+        - name: player_id
+          in: query
+          description: (around_player) a player's id
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A JSON array of user entities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Player"
+  /players/count:
+    get:
+      summary: Count players
+      tags:
+        - players
+      responses:
+        '200':
+          description: A JSON of created user entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    minmum: 0

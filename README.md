@@ -1,11 +1,3 @@
-1. leader board with RB-tree
-2. make a server
-3. create public API with Swagger doc
-5. draw and embed a diagram for design overview 
-
----
-
-
 # LoL leaderboard demonstration
 
 A submission for the assignment of Riot Games backend engineer interview.
@@ -39,7 +31,7 @@ Configure environment and install dependencies with `yarn install`.
 - Test:  `yarn test` runs unit tests on typescript codes and show the test coverage.
 - Build: `yarn build` transpiles typescript codes to runnable JS.
 - Run:   `yarn start` runs the built runnable. A HTTP server for the API listens to
-          the port *8888* by default. Can set the `PORT` env variable to change the listening port.
+          the port *8080* by default. Can set the `PORT` env variable to change the listening port.
 
 
 
@@ -47,7 +39,7 @@ Configure environment and install dependencies with `yarn install`.
 
 - Build image: `docker build . -t riot-assignment`
 - Test:        `docker run riot-assignment test`
-- Run:         `docker run -p8888:8888 riot-assignment`
+- Run:         `docker run -p8080:8080 riot-assignment`
 
 
 
@@ -71,14 +63,14 @@ Configure environment and install dependencies with `yarn install`.
 
 6. API to return list of players near given player's id. eg) If playerId is 5 and range of 5 is given.
    You are required to find 5 higher rank players and 5 lower rank players
-- `GET /players?strategy=around_play&player_id=:id&range=5`
+- `GET /players?strategy=around_player&player_id=:id&range=5`
 
 
 ### 1.5. API Document
 
 A Swagger UI endpoint has been set to homepage for a detailed documentation and a playground.
 
-- Visit [https://localhost:8888](https://localhost:8888)
+- Visit [http://0.0.0.0:8080](http://0.0.0.0:8080)
 
 ---
 
@@ -86,8 +78,6 @@ A Swagger UI endpoint has been set to homepage for a detailed documentation and 
 ## 2. Design considerations
 
 ### 2.1. Assumptions
-- A player's id cannot be duplicate.
-- A player's id cannot be updated once created in persistent layer.
 - Player's id and MMR should be a positive integer.
 - A player with higher MMR takes higher (numerically lower) rank.
 - For the tied MMR, younger player (whose id is numerically higher) will occupy higher rank.

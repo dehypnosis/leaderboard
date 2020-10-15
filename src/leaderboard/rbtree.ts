@@ -1,4 +1,5 @@
 /* wrap and type untyped external library for anti-corruption */
+// @ts-ignore
 import redblack from "redblack";
 
 

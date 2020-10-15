@@ -2,15 +2,20 @@ import * as fs from "fs";
 import * as path from "path";
 import { PlayerStore } from "./store";
 import { Player } from "./player";
-import { BadRequestError } from "../error";
 
 
 export class PlayerMemoryStore extends PlayerStore {
     private readonly map: Map<Player["id"], Player> = new Map();
 
     // Here, read given InitialData.txt file... to pretend to bootstrap initial database
-    public async started(): Promise<void> {
-        await super.started();
+    public async start(): Promise<void> {
+        await super.start();
+
+        this.map.clear();
+        if (process.env.SKIP_LOAD) {
+            return;
+        }
+
         const lines = fs
             .readFileSync(path.resolve(__dirname, "../../res/InitialData.txt"))
             .toString()
@@ -23,13 +28,10 @@ export class PlayerMemoryStore extends PlayerStore {
             const mmr = parseInt(_mmr, 10);
             this.map.set(id, { id, mmr });
         }
-        console.log(this.map.size, "# users of InitialData.txt has been loaded to PlayerMemoryStore");
+        console.log(this.map.size, "# of users has been loaded from 'InitialData.txt' to PlayerMemoryStore");
     }
 
     protected create(payload: Player): Promise<Player> {
-        if (this.map.has(payload.id)) {
-            throw new BadRequestError("given player id already exists.");
-        }
         const player = payload;
         this.map.set(payload.id, player);
         console.log(player, "has been created in PlayerMemoryStore");
@@ -37,9 +39,6 @@ export class PlayerMemoryStore extends PlayerStore {
     }
 
     protected update(payload: Player): Promise<Player> {
-        if (!this.map.has(payload.id)) {
-            throw new BadRequestError("cannot find the player with given id.");
-        }
         const player = payload;
         this.map.set(payload.id, player);
         console.log(player, "has been updated in PlayerMemoryStore");
@@ -47,9 +46,6 @@ export class PlayerMemoryStore extends PlayerStore {
     }
 
     protected delete(payload: Pick<Player, "id">): Promise<Pick<Player, "id">> {
-        if (!this.map.has(payload.id)) {
-            throw new BadRequestError("cannot find the player with given id.");
-        }
         this.map.delete(payload.id);
         return Promise.resolve(payload);
     }
@@ -60,5 +56,9 @@ export class PlayerMemoryStore extends PlayerStore {
 
     public count(): Promise<number> {
         return Promise.resolve(this.map.size);
+    }
+
+    public has(payload: Pick<Player, "id">): Promise<boolean> {
+        return Promise.resolve(this.map.has(payload.id));
     }
 }

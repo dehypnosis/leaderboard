@@ -1,6 +1,6 @@
 FROM node:12
-EXPOSE 8888
-ENV PORT 8888
+EXPOSE 8080
+ENV PORT 8080
 ENV NODE_ENV production
 
 # install deps
