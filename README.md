@@ -138,13 +138,14 @@ Binary Search Tree based data structure which takes logarithmic time complexity 
 
 Before making a decision, I simply checked whether a single node can easily load all the user data in memory.
 I found that more than 30 million users play LoL nowadays. So memory space for a tree with 30M nodes which are consist of
-`{ id, mmr, left, right, size }`, `size` field is for memorized number of children nodes for calculating rank, and
-an extra hashmap which maps `id  => node` would take approximately `(node (4byte + 4byte + 8byte + 8byte + 4byte) + hash (4byte + 8byte)) * 30M`
+`{ id, mmr, left, right, parent, size }`, `size` field is for memorized number of children nodes for calculating rank, and
+an extra hashmap which maps `id  => node` would take approximately `(node (4byte + 4byte + 8byte + 8byte + 8byte + 4byte) + hash (4byte + 8byte)) * 30M`
 which reaches to just 1200 MiB.
 
 So in-memory strategy seems obviously acceptable for this scenario. Then back to the data structure decision,
-I chose Red Black Tree which is a kind of BST with self-balancing feature. Because there must be tons of updates
-in user entities even in a single day, I thought a tree without self-balancing would be easily biased to make bad
-performance.
+After implementing `PlayerList` abstract class and `PlayerArrayList: PlayerList` class for the proof of concept,
+I planned to implement `PlayerRedBlackTreeList: PlayerList` which is a binary search tree with self-balancing feature.
+Because there must be tons of updates in user entities even in a single day, a non-self-balanced tree must be easily biased to make bad performance.
 
-For the codes, I just used an open source Red Black Tree library rather than struggling with reinventing that one.
+Unfortunately, due to lack of the time, I finished the project just with implementing naive `PlayerBinarySearchTreeList: PlayerList`. T.T
+Thank you for reading.

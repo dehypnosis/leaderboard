@@ -1,4 +1,5 @@
 import { Player } from "../../store";
+import { PlayerWithRank } from "../leaderboard";
 
 export abstract class PlayerList {
     public static compare(a: Player, b: Player) {
@@ -16,9 +17,9 @@ export abstract class PlayerList {
     }
 
     public abstract get size(): number;
-    public abstract getByRank(from: number, to: number): ReadonlyArray<Player>; // should fetch [from, to], from/to are both positive integer
-    public abstract rankOf(id: Player["id"]): number; // can ignore missing one (just do not return positive integer)
+    public abstract getByRank(from: number, to: number): ReadonlyArray<PlayerWithRank>; // should fetch [from, to], from/to are both positive integer
+    public abstract find(item: Player): PlayerWithRank | null; // can ignore missing one
     public abstract insert(item: Player): void; // can ignore inserting duplicate one case
-    public abstract delete(id: Player["id"]): void; // can ignore deleting missing one case
+    public abstract delete(item: Player): void; // can ignore deleting missing one case
     public abstract clear(): void;
 }

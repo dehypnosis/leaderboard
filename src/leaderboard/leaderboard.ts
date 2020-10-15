@@ -8,7 +8,7 @@ import {
     PlayerLeaderBoardGetRangeError,
     PlayerLeaderBoardGetStrategyError
 } from "../error";
-import { PlayerList, PlayerArrayList } from "./list";
+import { PlayerList, PlayerArrayList, PlayerBSTList } from "./list";
 
 export enum PlayerTier {
     "100#" = "CHALLENGER", // top 100 players
@@ -22,6 +22,12 @@ export enum PlayerTier {
 
 // extend interface
 export interface PlayerWithRank extends Player {
+    id: number;
+    mmr: number;
+    rank: number;
+}
+
+export interface PlayerWithRankAndTier extends PlayerWithRank {
     id: number;
     mmr: number;
     rank: number;
@@ -46,14 +52,15 @@ export type PlayerLeaderBoardFindArgs = {
 
 export class PlayerLeaderBoard implements PlayerStoreConsumer {
     private readonly map = new Map<Player["id"], Player>();
-    private readonly list: PlayerList = new PlayerArrayList();
+    // private readonly list: PlayerList = new PlayerArrayList();
+    private readonly list: PlayerList = new PlayerBSTList();
 
     /* data fetching */
     public count(): number {
         return this.list.size;
     }
 
-    public get(args: PlayerLeaderBoardGetArgs): PlayerWithRank[] {
+    public get(args: PlayerLeaderBoardGetArgs): PlayerWithRankAndTier[] {
         if (args.strategy === "around_player") {
             const { player_id, range } = args as PlayerLeaderBoardGetArgsWithAroundPlayerStrategy;
             if (typeof player_id !== "number" || isNaN(player_id)) {
@@ -61,21 +68,20 @@ export class PlayerLeaderBoard implements PlayerStoreConsumer {
             }
 
             const player = this.map.get(player_id)!;
-            if (!player) {
+            const playerWithRank = player && this.list.find(player)!;
+            if (!player || !playerWithRank) {
                 throw new NotFoundPlayerError();
             }
-            const rank = this.list.rankOf(player.id);
-            this.assert(typeof rank === "number" && rank > 0, "player rank should be positive");
 
             if (typeof range !== "number" || isNaN(range) || range < 0 || range > 50) {
                 throw new PlayerLeaderBoardGetRangeError();
             }
 
             return this.list.getByRank(
-                    Math.max(1, rank - args.range),
-                    rank + args.range,
+                    Math.max(1, playerWithRank.rank - args.range),
+                    playerWithRank.rank + args.range,
                 )
-                .map(p => this.mapPlayerWithRank(p));
+                .map(this.setTier);
 
         } else if (args.strategy === "rank") {
             const { limit, offset } = args as PlayerLeaderBoardGetArgsWithRankStrategy;
@@ -86,27 +92,27 @@ export class PlayerLeaderBoard implements PlayerStoreConsumer {
                 throw new PlayerLeaderBoardGetOffsetError();
             }
             return this.list.getByRank(args.offset + 1, args.offset + args.limit)
-                .map(p => this.mapPlayerWithRank(p));
+                .map(this.setTier);
         }
 
         throw new PlayerLeaderBoardGetStrategyError();
     }
 
-    public find(args: PlayerLeaderBoardFindArgs): PlayerWithRank {
+    public find(args: PlayerLeaderBoardFindArgs): PlayerWithRankAndTier {
         const player = this.map.get(args.id);
-        if (!player) {
+        const playerWithRank = player && this.list.find(player!)!
+        if (!playerWithRank) {
             throw new NotFoundPlayerError();
         }
-        return this.mapPlayerWithRank(player);
+        return this.setTier(playerWithRank);
     }
 
-    private mapPlayerWithRank(player: Player): PlayerWithRank {
-        const rank = this.list.rankOf(player.id);
-        this.assert(typeof rank === "number" && rank > 0, "player rank should be positive");
+    private setTier = (player: PlayerWithRank): PlayerWithRankAndTier => {
+        this.assert(typeof player.rank === "number" && player.rank > 0, "player rank should be positive");
         const total = this.list.size;
         let tier = PlayerTier["100%"];
-        const ratio = (rank / total) * 100;
-        if (rank <= 100) {
+        const ratio = (player.rank / total) * 100;
+        if (player.rank <= 100) {
             tier = PlayerTier["100#"];
         } else if (ratio <= 1) {
             tier = PlayerTier["1%"];
@@ -119,38 +125,34 @@ export class PlayerLeaderBoard implements PlayerStoreConsumer {
         } else if (ratio <= 65) {
             tier = PlayerTier["65%"];
         }
-        return {
-            ...player,
-            rank,
-            tier,
-        };
+        return { ...player, tier };
     }
 
     /* data manipulation */
     public onPlayerAdd(player: Player): void {
         this.assert(!this.map.has(player.id), "new player should not be registered to the list yet");
-        this.map.set(player.id, player);
         this.list.insert(player);
+        this.map.set(player.id, player);
     }
 
     public onPlayerUpdate(player: Player): void {
         const oldPlayer = this.map.get(player.id);
         this.assert(!!oldPlayer, "a player to update should be registered to the list already");
-        this.map.set(player.id, player);
-        this.list.delete(player.id);
+        this.list.delete(oldPlayer!);
         this.list.insert(player);
+        this.map.set(player.id, player);
     }
 
     public onPlayerDelete(playerId: Player["id"]): void {
         const oldPlayer = this.map.get(playerId);
         this.assert(!!oldPlayer, "a player to delete should be registered to the list already");
+        this.list.delete(oldPlayer!);
         this.map.delete(playerId);
-        this.list.delete(playerId);
     }
 
     public clear(): void {
-        this.map.clear();
         this.list.clear();
+        this.map.clear();
     }
 
     private assert(statement: boolean, message: string = "unexpected"): void {

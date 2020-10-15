@@ -61,6 +61,7 @@ describe("leaderboard base manipulation", () => {
 describe("leaderboard", () => {
     /* initialize board */
     const board = new PlayerLeaderBoard();
+    const N = 25000;
 
     it("should be cleared on INIT event: onPlayerStoreEvent(), clear()", () => {
         board.onPlayerAdd({ id: 1, mmr: 1 });
@@ -72,9 +73,9 @@ describe("leaderboard", () => {
         const generatePlayer = getPlayerFactory();
         board.onPlayerStoreEvent({
             type: PlayerStoreEventType.INIT,
-            payload: new Array(25000).fill(null).map(() => generatePlayer()),
+            payload: new Array(N).fill(null).map(() => generatePlayer()),
         });
-        console.log("created 25,000 fake users");
+        console.log(`created ${N} fake users`);
     });
 
     it("can get user with proper rank including duplicate: find(), onPlayerAdd/Update/Delete()", () => {
@@ -108,9 +109,15 @@ describe("leaderboard", () => {
 
         // add a user with tied highest mmr
         expect(() => board.onPlayerAdd({ id: 25001, mmr: 1000000 - 1 })).not.toThrowError();
-        expect(board.find({ id: 25001 })).toEqual(expect.objectContaining({ rank: 1, tier: PlayerTier["100#"] }));
-        expect(board.find({ id: 1 })).toEqual(expect.objectContaining({ rank: 2, tier: PlayerTier["100#"] }));
-        expect(board.find({ id: 100 })).toEqual(expect.objectContaining({ rank: 101, tier: PlayerTier["1%"] }));
+        expect([
+            board.find({ id: 25001 }),
+            board.find({ id: 1 }),
+            board.find({ id: 100 }),
+        ]).toEqual([
+            expect.objectContaining({ rank: 1, tier: PlayerTier["100#"] }),
+            expect.objectContaining({ id: 1, mmr: 999999, rank: 2, tier: PlayerTier["100#"] }),
+            expect.objectContaining({ rank: 101, tier: PlayerTier["1%"] }),
+        ]);
 
         // restore first user as highest mmr again
         expect(() => board.onPlayerUpdate({ id: 1, mmr: 1000000 })).not.toThrowError();
@@ -129,7 +136,7 @@ describe("leaderboard", () => {
         // top edge case
         expect(board.get({ strategy: "rank", offset: 0, limit: 10 }))
             .toEqual([
-                expect.objectContaining({ rank: 1 }),
+                expect.objectContaining({ rank: 1, id: 1 }),
                 expect.objectContaining({ rank: 2 }),
                 expect.objectContaining({ rank: 3 }),
                 expect.objectContaining({ rank: 4 }),
@@ -138,7 +145,7 @@ describe("leaderboard", () => {
                 expect.objectContaining({ rank: 7 }),
                 expect.objectContaining({ rank: 8 }),
                 expect.objectContaining({ rank: 9 }),
-                expect.objectContaining({ rank: 10 }),
+                expect.objectContaining({ rank: 10,  id: 10 }),
             ]);
 
         // regular case
@@ -146,17 +153,17 @@ describe("leaderboard", () => {
             .toEqual([
                 expect.objectContaining({ rank: 6 }),
                 expect.objectContaining({ rank: 7 }),
-                expect.objectContaining({ rank: 8 }),
+                expect.objectContaining({ rank: 8, id: 8 }),
                 expect.objectContaining({ rank: 9 }),
                 expect.objectContaining({ rank: 10 }),
             ]);
 
         // bottom edge case
-        expect(board.get({ strategy: "rank", offset: 24999, limit: 5 }))
+        expect(board.get({ strategy: "rank", offset: N-1, limit: 5 }))
             .toEqual([
-                expect.objectContaining({ rank: 25000 }),
+                expect.objectContaining({ rank: N }),
             ]);
-        expect(board.get({ strategy: "rank", offset: 25000, limit: 5 }))
+        expect(board.get({ strategy: "rank", offset: N, limit: 5 }))
             .toEqual([]);
     });
 
@@ -184,45 +191,46 @@ describe("leaderboard", () => {
             ]);
 
         // regular case
-        expect(board.get({ strategy: "around_player", range: 3, player_id: 11000 }))
+        const M = Math.ceil(N/2);
+        expect(board.get({ strategy: "around_player", range: 3, player_id: M }))
             .toEqual([
-                expect.objectContaining({ rank: 10997 }),
-                expect.objectContaining({ rank: 10998 }),
-                expect.objectContaining({ rank: 10999 }),
-                expect.objectContaining({ rank: 11000 }),
-                expect.objectContaining({ rank: 11001 }),
-                expect.objectContaining({ rank: 11002 }),
-                expect.objectContaining({ rank: 11003 }),
+                expect.objectContaining({ rank: M-3 }),
+                expect.objectContaining({ rank: M-2 }),
+                expect.objectContaining({ rank: M-1 }),
+                expect.objectContaining({ rank: M }),
+                expect.objectContaining({ rank: M+1 }),
+                expect.objectContaining({ rank: M+2 }),
+                expect.objectContaining({ rank: M+3 }),
             ]);
-        expect(board.get({ strategy: "around_player", range: 2, player_id: 11000 }))
+        expect(board.get({ strategy: "around_player", range: 2, player_id: M }))
             .toEqual([
-                expect.objectContaining({ rank: 10998 }),
-                expect.objectContaining({ rank: 10999 }),
-                expect.objectContaining({ rank: 11000 }),
-                expect.objectContaining({ rank: 11001 }),
-                expect.objectContaining({ rank: 11002 }),
+                expect.objectContaining({ rank: M-2 }),
+                expect.objectContaining({ rank: M-1 }),
+                expect.objectContaining({ rank: M }),
+                expect.objectContaining({ rank: M+1 }),
+                expect.objectContaining({ rank: M+2 }),
             ]);
 
         // bottom edge case
-        expect(board.get({ strategy: "around_player", range: 5, player_id: 24998 }))
+        expect(board.get({ strategy: "around_player", range: 5, player_id: N-2 }))
             .toEqual([
-                expect.objectContaining({ rank: 24993 }),
-                expect.objectContaining({ rank: 24994 }),
-                expect.objectContaining({ rank: 24995 }),
-                expect.objectContaining({ rank: 24996 }),
-                expect.objectContaining({ rank: 24997 }),
-                expect.objectContaining({ rank: 24998 }),
-                expect.objectContaining({ rank: 24999 }),
-                expect.objectContaining({ rank: 25000 }),
+                expect.objectContaining({ rank: N-7 }),
+                expect.objectContaining({ rank: N-6 }),
+                expect.objectContaining({ rank: N-5 }),
+                expect.objectContaining({ rank: N-4 }),
+                expect.objectContaining({ rank: N-3 }),
+                expect.objectContaining({ rank: N-2 }),
+                expect.objectContaining({ rank: N-1 }),
+                expect.objectContaining({ rank: N }),
             ]);
-        expect(board.get({ strategy: "around_player", range: 5, player_id: 25000 }))
+        expect(board.get({ strategy: "around_player", range: 5, player_id: N }))
             .toEqual([
-                expect.objectContaining({ rank: 24995 }),
-                expect.objectContaining({ rank: 24996 }),
-                expect.objectContaining({ rank: 24997 }),
-                expect.objectContaining({ rank: 24998 }),
-                expect.objectContaining({ rank: 24999 }),
-                expect.objectContaining({ rank: 25000 }),
+                expect.objectContaining({ rank: N-5 }),
+                expect.objectContaining({ rank: N-4 }),
+                expect.objectContaining({ rank: N-3 }),
+                expect.objectContaining({ rank: N-2 }),
+                expect.objectContaining({ rank: N-1 }),
+                expect.objectContaining({ rank: N }),
             ]);
     });
 });

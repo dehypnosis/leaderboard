@@ -3254,11 +3254,6 @@ readable-stream@^3.6.0:
     string_decoder "^1.1.1"
     util-deprecate "^1.0.1"
 
-redblack@^0.1.2:
-  version "0.1.2"
-  resolved "https://registry.yarnpkg.com/redblack/-/redblack-0.1.2.tgz#23a17109c983cbf24484db551a2346453891e90f"
-  integrity sha1-I6FxCcmDy/JEhNtVGiNGRTiR6Q8=
-
 regex-not@^1.0.0, regex-not@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/regex-not/-/regex-not-1.0.2.tgz#1f4ece27e00b0b65e0247a6810e6a85d83a5752c"

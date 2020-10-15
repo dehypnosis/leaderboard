@@ -91,7 +91,7 @@ describe("api endpoints", () => {
     it("GET /count", async () => {
         await request().get("/players/count").then(res => {
             expect(res.status).toEqual(200);
-            return request().get("/players?limit=100").then(res2 => {
+            return request().get("/players?limit=" + res.body.total).then(res2 => {
                 expect(res2.status).toEqual(200);
                 expect(res2.body.length).toEqual(res.body.total);
             });
@@ -111,6 +111,7 @@ describe("api endpoints", () => {
 
         await request().get("/players?strategy=rank&offset=0&limit=100").then(res => {
             expect(res.status).toEqual(200);
+            console.log(res.body);
             const fifth = res.body[4];
             expect(fifth).toEqual(expect.objectContaining({ rank: 5 }));
 
