@@ -75,7 +75,6 @@ A Swagger UI endpoint has been set to homepage for a detailed documentation and 
 - A player with higher MMR takes higher (numerically lower) rank.
 - For the tied MMR, younger player (whose id is numerically higher) occupies higher rank.
 
-
 ### 2.2. Overview
 
 Obviously, the requirement seems like making just a simple application which mimics the leaderboard of LoL.
@@ -84,6 +83,7 @@ But I know your assignment requires me to show my ability for designing not only
 So I have elaborated this application somewhat to contain the fundamental of testability, portability,
 extensibility and scalability.
 
+![Diagam](./res/diagram.png)
 
 #### 2.2.1. Testability:
 
@@ -129,7 +129,6 @@ The app has been dockerized.
 
 #### 2.2.3. Extensibility and scalability:
 
-
 ##### PlayerStore => PlayerMemoryStore
 
 Firstly, I decoupled the concept of `PlayerStore` and the `PlayerLeaderBoard`. There might be a lot of utilization
@@ -151,7 +150,7 @@ I have seen once that Riot Games has been using Kafka as a central messaging bro
 the exact role of that in the whole system. But here I assumed that there might be a lot of `PlayerLeaderBoard`
 like apps. So I tried to treat `PlayerStore` as a kind of message producer, and `PlayerLeaderBoard` as a message consumer.
 
-Finally, a `HTTP Server` would serve the features of `PlayerLeaderBoard` and `PlayerStore` as a single public
+Finally, a `APIServer` would serve the features of `PlayerLeaderBoard` and `PlayerStore` as a single public
 interface.
 
 
@@ -161,7 +160,7 @@ At first, I thought this assignment has been designed for just testing an abilit
 from a scratch. So my first idea was simply using a sorted Array with a binary search strategy for calculating
 ranks, and an extra hash map for random access to specific user node.
 
-After I had made some progress in broad perspective code structure, I realized that Riots Games would have dozens
+After I had made some progress in broad perspective code structure, I realized that Riot Games would have dozens
 of millions users. Then I found out that it requires consideration for a highly performant implementation of the
 leaderboard.
 
@@ -175,9 +174,9 @@ an extra hashmap which maps `id  => node` would take approximately `(node (4byte
 which reaches to just 1200 MiB.
 
 So in-memory strategy seems obviously acceptable for this scenario. Then back to the data structure decision,
-After implementing `PlayerList` abstract class and `PlayerArrayList: PlayerList` class for the proof of concept,
-I planned to implement `PlayerRedBlackTreeList: PlayerList` which is a binary search tree with self-balancing feature.
+After implementing `PlayerList` abstract class and `PlayerArrayList` class for the proof of concept,
+I planned to implement `PlayerRedBlackTreeList` which is a binary search tree with self-balancing feature.
 Because there must be tons of updates in user entities even in a single day, a non-self-balanced tree must be easily biased to make bad performance.
 
-Unfortunately, due to lack of the time, I finished the project just with implementing naive `PlayerBinarySearchTreeList: PlayerList`. T.T
+Unfortunately, due to lack of the time, I finished the project just with implementing naive `PlayerBSTList`. T.T
 Thank you for reading.
