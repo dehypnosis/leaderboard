@@ -6,21 +6,23 @@ import { Player } from "./player";
 
 export class PlayerMemoryStore extends PlayerStore {
     private readonly map: Map<Player["id"], Player> = new Map();
+    constructor(private readonly numberOfInitialDataToLoad = Infinity) {
+        super();
+    }
 
     // Here, read given InitialData.txt file... to pretend to bootstrap initial database
     public async start(): Promise<void> {
         await super.start();
 
         this.map.clear();
-        if (process.env.SKIP_LOAD) {
-            return;
-        }
-
         const lines = fs
             .readFileSync(path.resolve(__dirname, "../../res/InitialData.txt"))
             .toString()
             .trim()
             .split("\n");
+        if (this.numberOfInitialDataToLoad !== Infinity) {
+            lines.splice(this.numberOfInitialDataToLoad, lines.length - this.numberOfInitialDataToLoad);
+        }
 
         for (const line of lines) {
             const [_id, _mmr] = line.split(",");

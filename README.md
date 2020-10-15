@@ -43,34 +43,26 @@ Configure environment and install dependencies with `yarn install`.
 
 
 
-### 1.4. API Specification
-
-1. API to update/add a player (Leaderboard should also be updated)
-- `PUT /players/:id`
-- `POST /players`
-
-2. API to delete a player
-- `DELETE /players/:id`
-
-3. API to return tier of a player
-- `GET /players/:id`
-
-4. API to return total number of player count
-- `GET /players/count`
-
-5. API to return list of top 10 players
-- `GET /players?strategy=rank&offset=0&limit=10`
-
-6. API to return list of players near given player's id. eg) If playerId is 5 and range of 5 is given.
-   You are required to find 5 higher rank players and 5 lower rank players
-- `GET /players?strategy=around_player&player_id=:id&range=5`
+### 1.4. API endpoints
 
 
-### 1.5. API Document
+- Manipulate a single player entity.
+    - `GET /players/:id` - Retrieve a player.
+    - `PUT /players/:id` - Update a player.
+    - `DELETE /players/:id` - Delete a player.
+    - `POST /players` - Create a player.
+- Fetch players entities.
+    - `GET /players/count` - Count players.
+    - `GET /players?strategy=rank&offset=0&limit=10` - Get top 10 players.
+    - `GET /players?strategy=around_player&player_id=:id&range=5` - Get each 5 players near given player's rank for both higher and lower ranks each.
+
+
+### 1.5. API specification in detail
 
 A Swagger UI endpoint has been set to homepage for a detailed documentation and a playground.
 
-- Visit [http://0.0.0.0:8080](http://0.0.0.0:8080)
+- Visit Swagger UI: [http://0.0.0.0:8080](http://0.0.0.0:8080)
+- See OpenAPI 3.0 specification: [./swagger.yaml](./swagger.yaml)
 
 ---
 
@@ -79,8 +71,9 @@ A Swagger UI endpoint has been set to homepage for a detailed documentation and 
 
 ### 2.1. Assumptions
 - Player's id and MMR should be a positive integer.
+- Client request for creating entity includes player's id as payload.
 - A player with higher MMR takes higher (numerically lower) rank.
-- For the tied MMR, younger player (whose id is numerically higher) will occupy higher rank.
+- For the tied MMR, younger player (whose id is numerically higher) occupies higher rank.
 
 
 ### 2.2. Overview
@@ -107,7 +100,7 @@ The app has been dockerized.
 
 ##### PlayerStore => PlayerMemoryStore
 
-Firstly, I decoupled the conceipt of `PlayerStore` and the `PlayerLeaderBoard`. There might be a lot of utilization
+Firstly, I decoupled the concept of `PlayerStore` and the `PlayerLeaderBoard`. There might be a lot of utilization
 for user identities and game results in Riot Games. Then naturally there might be a single source of user data
 like a distributed database which I named `PlayerStore` here in this project.
 
@@ -124,7 +117,7 @@ system; I meant yours.
 
 I have seen once that Riot Games has been using Kafka as a central messaging broker. I'm not sure about
 the exact role of that in the whole system. But here I assumed that there might be a lot of `PlayerLeaderBoard`
-like apps. So I tried to treat `PlayerStore` as a kind of message broker, and `PlayerLeaderBoard` as a message consumer.
+like apps. So I tried to treat `PlayerStore` as a kind of message producer, and `PlayerLeaderBoard` as a message consumer.
 
 Finally, a `HTTP Server` would serve the features of `PlayerLeaderBoard` and `PlayerStore` as a single public
 interface.
@@ -140,17 +133,18 @@ After I had made some progress in broad perspective code structure, I realized t
 of millions users. Then I found out that it requires consideration for a highly performant implementation of the
 leaderboard.
 
-Naive Array takes O(N) for insertion, deletion, searching (for rank calculation) operations. So I decided to use
-Binary Search Tree based data structure which takes logarithmic time complexity for such operations.
+Naive Array takes `O(N)` for insertion, deletion, searching (for rank calculation) operations. So I decided to use
+Binary Search Tree based data structure which takes logarithmic time complexity `O(logN)` for such operations.
 
 Before making a decision, I simply checked whether a single node can easily load all the user data in memory.
-I found that more than 30 million users play LoL nowadays. So memory space for 30M users data with
-`{ id, mmr, left, right, size }` like nodes (`size` field is for memorized number of children nodes for calculating rank)
-would take approximately (4byte + 4byte + 8byte + 8byte + 4byte) * 30M which reaches to just 840MB.
+I found that more than 30 million users play LoL nowadays. So memory space for a tree with 30M nodes which are consist of
+`{ id, mmr, left, right, size }`, `size` field is for memorized number of children nodes for calculating rank, and
+an extra hashmap which maps `id  => node` would take approximately `(node (4byte + 4byte + 8byte + 8byte + 4byte) + hash (4byte + 8byte)) * 30M`
+which reaches to just 1200 MiB.
 
 So in-memory strategy seems obviously acceptable for this scenario. Then back to the data structure decision,
 I chose Red Black Tree which is a kind of BST with self-balancing feature. Because there must be tons of updates
 in user entities even in a single day, I thought a tree without self-balancing would be easily biased to make bad
 performance.
 
-For the codes, I just used an open source RB-Tree library rather than struggling with reinventing that one.
+For the codes, I just used an open source Red Black Tree library rather than struggling with reinventing that one.

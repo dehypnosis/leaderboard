@@ -154,7 +154,7 @@ paths:
             minimum: 0
         - name: limit
           in: query
-          description: (rank) a number of users to fetch
+          description: (rank) a number of players to fetch
           schema:
             type: integer
             default: 10
@@ -162,7 +162,7 @@ paths:
             maximum: 100
         - name: range
           in: query
-          description: (around_player) a number of users to fetch from both up and down side each
+          description: (around_player) a number of players to fetch from both higher and lower ranks each
           schema:
             type: integer
             default: 5

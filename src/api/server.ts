@@ -14,7 +14,7 @@ const swaggerDoc = YAML.parse(fs.readFileSync(path.resolve(__dirname, "../../swa
 
 export class APIServer {
     private readonly app = express();
-    private readonly leaderboard = new PlayerLeaderBoard();
+    private readonly playerLeaderBoard = new PlayerLeaderBoard();
     private server: http.Server | undefined;
 
     constructor(private readonly store: PlayerStore, private readonly port: number = 8080, private readonly hostname: string = "0.0.0.0") {
@@ -30,7 +30,7 @@ export class APIServer {
         const players = express.Router({ caseSensitive: false, strict: false });
 
         players.get("/count", (req, res) => {
-            const total = this.leaderboard.count();
+            const total = this.playerLeaderBoard.count();
             res.json({ total });
         });
 
@@ -38,7 +38,7 @@ export class APIServer {
             const payload: PlayerLeaderBoardFindArgs = {
                 id: parseInt(req.params.id),
             };
-            const player = this.leaderboard.find(payload);
+            const player = this.playerLeaderBoard.find(payload);
             res.json(player);
         });
 
@@ -50,7 +50,7 @@ export class APIServer {
                 };
                 await this.store.updateAndBroadcast(payload);
                 process.nextTick(() => {
-                    const player = this.leaderboard.find({ id: payload.id });
+                    const player = this.playerLeaderBoard.find({ id: payload.id });
                     res.json(player);
                 });
             } catch (err) {
@@ -78,7 +78,7 @@ export class APIServer {
                 };
                 await this.store.createAndBroadcast(payload);
                 process.nextTick(() => {
-                    const player = this.leaderboard.find({ id: payload.id });
+                    const player = this.playerLeaderBoard.find({ id: payload.id });
                     res.json(player);
                 });
             } catch (err) {
@@ -110,7 +110,7 @@ export class APIServer {
                         break;
                 }
             }
-            const players = this.leaderboard.get(payload);
+            const players = this.playerLeaderBoard.get(payload);
             res.json(players);
         });
 
@@ -141,7 +141,7 @@ export class APIServer {
         await this.store.start();
 
         // register subscription
-        await this.store.registerConsumer(this.leaderboard);
+        await this.store.registerConsumer(this.playerLeaderBoard);
 
         // run http server
         return new Promise((resolve, reject) => {
@@ -175,7 +175,7 @@ export class APIServer {
         });
 
         // unregister subscription
-        await this.store.unregisterConsumer(this.leaderboard);
+        await this.store.unregisterConsumer(this.playerLeaderBoard);
 
         // run lifecycle hooks
         await this.store.stop();
